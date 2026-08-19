@@ -56,10 +56,9 @@ python -m scripts.generate_signals --asset-class crypto --symbol BTC/USD --timef
 
 Simulates the signal generator over stored candles with next-bar-open fills,
 realistic per-asset-class fees/slippage, and rolling out-of-sample test
-windows (no parameter fitting happens yet — that's Phase 4; this evaluates
-the current fixed-vote strategy across multiple historical periods rather
-than a single full-history run, so it catches a strategy that only looks
-good on one period):
+windows — this evaluates the current fixed-vote strategy across multiple
+historical periods rather than a single full-history run, so it catches a
+strategy that only looks good on one period:
 
 ```bash
 python -m scripts.run_backtest --asset-class crypto --symbol BTC/USD --timeframe 1h \
@@ -75,9 +74,57 @@ combined calculation, so only per-window results are shown in that case.
 Fee/slippage defaults are printed up front when they're an unverified
 estimate rather than a researched figure (see `signalforge/backtest/costs.py`).
 
+## ML vs. rule-based comparison
+
+Fits a fresh LightGBM classifier per walk-forward window (train range strictly
+before its test range, so purging happens by construction — training data
+never reaches into the test period) and compares it against the same
+rule-based baseline over the identical test windows, same cost model, same
+`simulate_trades()`/`compute_metrics()` Phase 3 already established:
+
+```bash
+python -m scripts.run_ml_backtest --asset-class crypto --symbol BTC/USD --timeframe 1h \
+    --start 2024-01-01 --end 2026-08-01 --train-days 60 --test-days 14
+```
+
+**The ML side is always long-only**, with a fixed `--horizon`-bar holding
+period realized mechanically through the signal sequence: a "buy" fires when
+`P(up)` crosses `--buy-threshold`, and the position is force-exited exactly
+`--horizon` bars later regardless of that bar's own prediction — a binary
+up/down label can't support principled short decisions (class 0 conflates
+"flat" with "crashed"), so ML shorting is out of scope. `--rule-position-mode`
+governs *only* the rule-based baseline, which can still run `long_short` for
+forex — a deliberate, documented asymmetry: the rule-based side's shorting
+logic comes from real bearish indicator readings, and forcing it to
+long-only just to make the comparison symmetric would understate capability
+it genuinely has. The CLI prints this plainly before the results table.
+
+Features are engineered from price/indicators only by default (`rsi`,
+normalized MACD/Bollinger/ATR, momentum returns, a volatility-regime ratio —
+see `signalforge/ml/features.py`); pass `--include-rule-based-features` to
+additionally give the model the rule-based generator's own `vote_sum`/
+`confidence` as features. Reported per window: trading metrics (Sharpe, win
+rate, profit factor) alongside probabilistic prediction-quality metrics
+(ROC-AUC, Brier score, log loss) — these answer different questions ("does
+it predict" vs. "does it make money after costs") and can disagree. A window
+is skipped for ML (with a logged reason — insufficient post-purge training
+rows, or single-class labels) while the rule-based side still reports
+normally. A combined "stitched" summary is shown for each side independently,
+and for the ML side only when *every* window in the range produced a fitted
+model — a gapped ML history stitched as if contiguous would misrepresent it,
+the same trap Phase 3's design avoided for overlapping/gapped test windows.
+
+**Methodology note**: repeatedly re-running this against the same date range
+while tuning `--horizon`/`--buy-threshold`/features is itself a form of
+overfitting — you become the hyperparameter search. Reserve a final,
+most-recent date range and don't touch it until every other decision is
+locked in from earlier, disjoint ranges, then run it there once as a genuine
+final check. Not enforced in code — discipline only.
+
 ## Status
 
 Phase 0 (setup), Phase 1 (Kraken + OANDA data adapters), Phase 2
-(indicator/signal layer with optional multi-timeframe confirmation), and
-Phase 3 (walk-forward backtesting) are in place. See the project plan for
-the full phased roadmap (ML, fundamentals, paper trading, live execution).
+(indicator/signal layer with optional multi-timeframe confirmation), Phase 3
+(walk-forward backtesting), and Phase 4 (LightGBM ML layer, compared against
+the rule-based baseline) are in place. See the project plan for the full
+phased roadmap (fundamentals, paper trading, live execution).

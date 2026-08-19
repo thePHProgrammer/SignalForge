@@ -58,10 +58,14 @@ class WalkForwardReport:
     combined_run: BacktestRun | None
 
 
-def _load_buffered(conn, symbol, asset_class, timeframe, test_start, test_end, warmup_buffer_bars):
+def load_buffered(conn, symbol, asset_class, timeframe, range_start, range_end, warmup_buffer_bars):
+    """Fetches candles covering [range_start - warmup_buffer_bars*bar, range_end),
+    with the buffer sized in that timeframe's own calendar time. `range_start`/
+    `range_end` are generic -- this is used for both train and test ranges
+    (Phase 4 onward), not just test windows."""
     bar = _TIMEFRAME_TIMEDELTAS[timeframe]
-    query_start = test_start - warmup_buffer_bars * bar
-    query_end = test_end - bar  # test_end is exclusive; the last real candle is one bar before it
+    query_start = range_start - warmup_buffer_bars * bar
+    query_end = range_end - bar  # range_end is exclusive; the last real candle is one bar before it
     candles = query_candles(conn, symbol=symbol, asset_class=asset_class, timeframe=timeframe,
                              start=query_start, end=query_end)
     if not candles:
@@ -70,9 +74,9 @@ def _load_buffered(conn, symbol, asset_class, timeframe, test_start, test_end, w
     return price_df, generate_signals(price_df)
 
 
-def _run_single_window(conn, symbol, asset_class, timeframe, confirm_timeframe, window,
-                        warmup_buffer_bars, initial_capital, position_mode, cost_model) -> BacktestRun | None:
-    primary_price, primary_signals = _load_buffered(
+def run_single_window(conn, symbol, asset_class, timeframe, confirm_timeframe, window,
+                       warmup_buffer_bars, initial_capital, position_mode, cost_model) -> BacktestRun | None:
+    primary_price, primary_signals = load_buffered(
         conn, symbol, asset_class, timeframe, window.test_start, window.test_end, warmup_buffer_bars
     )
     if primary_price is None:
@@ -81,7 +85,7 @@ def _run_single_window(conn, symbol, asset_class, timeframe, confirm_timeframe, 
         return None
 
     if confirm_timeframe:
-        _, confirmation_signals = _load_buffered(
+        _, confirmation_signals = load_buffered(
             conn, symbol, asset_class, confirm_timeframe, window.test_start, window.test_end, warmup_buffer_bars
         )
         if confirmation_signals is None:
@@ -101,7 +105,7 @@ def _run_single_window(conn, symbol, asset_class, timeframe, confirm_timeframe, 
                             position_mode=position_mode, force_close_at_end=True)
 
 
-def _stitch_runs(runs: list[BacktestRun], initial_capital: float) -> BacktestRun:
+def stitch_runs(runs: list[BacktestRun], initial_capital: float) -> BacktestRun:
     returns = pd.concat([r.equity_curve.pct_change().dropna() for r in runs])
     stitched_equity = initial_capital * (1 + returns).cumprod()
     all_trades = [t for r in runs for t in r.trades]
@@ -135,8 +139,8 @@ def run_walk_forward(
 
     window_results: list[WalkForwardWindowResult] = []
     for window in walk_forward_windows(pd.Timestamp(start), pd.Timestamp(end), train_period, test_period, step):
-        run = _run_single_window(conn, symbol, asset_class, timeframe, confirm_timeframe, window,
-                                  warmup_buffer_bars, initial_capital, position_mode, resolved_cost_model)
+        run = run_single_window(conn, symbol, asset_class, timeframe, confirm_timeframe, window,
+                                 warmup_buffer_bars, initial_capital, position_mode, resolved_cost_model)
         if run is None:
             continue
         metrics = compute_metrics(run, timeframe=timeframe, asset_class=asset_class, risk_free_rate=risk_free_rate)
@@ -144,7 +148,7 @@ def run_walk_forward(
 
     combined_run = combined_metrics = None
     if is_contiguous and window_results:
-        combined_run = _stitch_runs([r.run for r in window_results], initial_capital)
+        combined_run = stitch_runs([r.run for r in window_results], initial_capital)
         combined_metrics = compute_metrics(combined_run, timeframe=timeframe, asset_class=asset_class, risk_free_rate=risk_free_rate)
 
     return WalkForwardReport(windows=window_results, combined_metrics=combined_metrics, combined_run=combined_run)
