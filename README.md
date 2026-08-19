@@ -52,9 +52,32 @@ python -m scripts.fetch_candles --asset-class crypto --symbol BTC/USD --timefram
 python -m scripts.generate_signals --asset-class crypto --symbol BTC/USD --timeframe 5m --confirm-timeframe 1m --start 2026-08-15 --end 2026-08-19
 ```
 
+## Walk-forward backtesting
+
+Simulates the signal generator over stored candles with next-bar-open fills,
+realistic per-asset-class fees/slippage, and rolling out-of-sample test
+windows (no parameter fitting happens yet — that's Phase 4; this evaluates
+the current fixed-vote strategy across multiple historical periods rather
+than a single full-history run, so it catches a strategy that only looks
+good on one period):
+
+```bash
+python -m scripts.run_backtest --asset-class crypto --symbol BTC/USD --timeframe 1h \
+    --start 2024-01-01 --end 2026-08-01 --train-days 90 --test-days 30
+```
+
+Crypto is always long-only (Kraken is spot-only in this codebase). Forex
+defaults to `--position-mode long_short` (OANDA supports shorting), overridable
+to `long_only`. A combined "stitched" out-of-sample summary is only shown
+when test windows are contiguous (`--step-days` unset or equal to
+`--test-days`) — overlapping or gapped windows would corrupt a naive
+combined calculation, so only per-window results are shown in that case.
+Fee/slippage defaults are printed up front when they're an unverified
+estimate rather than a researched figure (see `signalforge/backtest/costs.py`).
+
 ## Status
 
-Phase 0 (setup), Phase 1 (Kraken + OANDA data adapters), and Phase 2
-(indicator/signal layer, with optional multi-timeframe confirmation) are in
-place. See the project plan for the full phased roadmap (backtesting, ML,
-fundamentals, paper trading, live execution).
+Phase 0 (setup), Phase 1 (Kraken + OANDA data adapters), Phase 2
+(indicator/signal layer with optional multi-timeframe confirmation), and
+Phase 3 (walk-forward backtesting) are in place. See the project plan for
+the full phased roadmap (ML, fundamentals, paper trading, live execution).
