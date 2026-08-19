@@ -31,8 +31,30 @@ python -m scripts.fetch_candles --asset-class forex  --symbol EUR/USD --timefram
 Candles are written to the SQLite database at `data/signalforge.db` (path
 configurable via `SIGNALFORGE_DB_PATH` in `.env`).
 
+## Generating signals
+
+Reads candles already stored by `fetch_candles.py`, computes RSI/MACD/Bollinger
+Bands/ATR, and prints a buy/sell/hold signal with a confidence score
+(0-1, agreement strength across the three directional indicators — not a
+probability):
+
+```bash
+python -m scripts.generate_signals --asset-class crypto --symbol BTC/USD --timeframe 1h --start 2026-08-01 --end 2026-08-19
+```
+
+Add `--confirm-timeframe` to require a faster timeframe to agree before a
+signal fires (e.g. a 5m primary signal confirmed by 1m) — both timeframes
+need their candles fetched independently first:
+
+```bash
+python -m scripts.fetch_candles --asset-class crypto --symbol BTC/USD --timeframe 5m --start 2026-08-15 --end 2026-08-19
+python -m scripts.fetch_candles --asset-class crypto --symbol BTC/USD --timeframe 1m --start 2026-08-15 --end 2026-08-19
+python -m scripts.generate_signals --asset-class crypto --symbol BTC/USD --timeframe 5m --confirm-timeframe 1m --start 2026-08-15 --end 2026-08-19
+```
+
 ## Status
 
-Phase 0 (setup) and Phase 1 (Kraken + OANDA data adapters) are in place.
-See the project plan for the full phased roadmap (indicators/signals,
-backtesting, ML, fundamentals, paper trading, live execution).
+Phase 0 (setup), Phase 1 (Kraken + OANDA data adapters), and Phase 2
+(indicator/signal layer, with optional multi-timeframe confirmation) are in
+place. See the project plan for the full phased roadmap (backtesting, ML,
+fundamentals, paper trading, live execution).
