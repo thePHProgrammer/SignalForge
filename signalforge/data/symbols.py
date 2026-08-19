@@ -1,9 +1,10 @@
 """Canonical symbol format ("BASE/QUOTE", uppercase) and generic transforms.
 
-CoinGecko's canonical -> provider-id mapping is not deterministic (ticker to
-coin-ID is ambiguous across chains/wrapped assets), so it lives as a static
-table inside adapters/coingecko.py rather than here. OANDA's mapping is a
-pure deterministic string transform, so it belongs in this shared module.
+Kraken's canonical -> pair-code mapping is not a pure deterministic transform
+(legacy assets get "X"/"Z" prefixes inconsistently, e.g. "BTC" -> "XBT"), so
+it lives as a static table inside adapters/kraken.py rather than here.
+OANDA's mapping is a pure deterministic string transform, so it belongs in
+this shared module.
 """
 
 from __future__ import annotations

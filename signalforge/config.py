@@ -1,6 +1,6 @@
 """Environment-backed application settings.
 
-Loading never validates or raises: a CoinGecko-only fetch shouldn't require
+Loading never validates or raises: a Kraken-only fetch shouldn't require
 OANDA_API_TOKEN to be set. Missing-credential errors surface lazily, inside
 the adapter that actually needs the value.
 """
@@ -21,7 +21,6 @@ class Settings:
     oanda_api_token: str | None
     oanda_account_id: str | None
     oanda_environment: str
-    coingecko_api_key: str | None
     db_path: Path
     log_level: str
 
@@ -38,7 +37,6 @@ def load_settings() -> Settings:
         oanda_api_token=os.environ.get("OANDA_API_TOKEN") or None,
         oanda_account_id=os.environ.get("OANDA_ACCOUNT_ID") or None,
         oanda_environment=os.environ.get("OANDA_ENVIRONMENT", "practice"),
-        coingecko_api_key=os.environ.get("COINGECKO_API_KEY") or None,
         db_path=db_path,
         log_level=os.environ.get("LOG_LEVEL", "INFO"),
     )

@@ -1,9 +1,9 @@
 """Manual CLI: fetch candles for one symbol and store them in SQLite.
 
 Doubles as the day-to-day dev tool and the live smoke test against real
-CoinGecko (no key needed) and the user's real OANDA practice account
-(requires OANDA_API_TOKEN in .env). This is the only Phase 1 code path that
-ever makes a real network call.
+Kraken (no auth needed) and the user's real OANDA practice account (requires
+OANDA_API_TOKEN in .env). This is the only Phase 1 code path that ever makes
+a real network call.
 
 Usage:
     python -m scripts.fetch_candles --asset-class crypto --symbol BTC/USD --timeframe 4h --start 2026-08-01 --end 2026-08-19
@@ -16,7 +16,7 @@ import argparse
 from datetime import datetime, timezone
 
 from signalforge.config import load_settings
-from signalforge.data.adapters.coingecko import CoinGeckoAdapter
+from signalforge.data.adapters.kraken import KrakenAdapter
 from signalforge.data.adapters.oanda import OANDAAdapter
 from signalforge.data.storage.db import get_connection, init_db, upsert_candles
 from signalforge.logging_config import setup_logging
@@ -42,7 +42,7 @@ def main() -> None:
     setup_logging(settings.log_level)
 
     if args.asset_class == "crypto":
-        adapter = CoinGeckoAdapter(api_key=settings.coingecko_api_key)
+        adapter = KrakenAdapter()
     else:
         adapter = OANDAAdapter(api_token=settings.oanda_api_token, environment=settings.oanda_environment)
 
