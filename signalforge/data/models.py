@@ -17,5 +17,5 @@ class Candle:
     high: float
     low: float
     close: float
-    volume: float | None  # None for CoinGecko (its OHLC endpoint has no volume)
+    volume: float | None  # nullable for adapters whose source has no volume data
     source: str  # "coingecko" | "oanda"
