@@ -24,6 +24,13 @@ import pandas as pd
 
 from signalforge.indicators import atr, bollinger_bands, macd, rsi
 
+# MACD (default 12/26/9) is the binding warm-up constraint among the three
+# directional indicators -- signal/histogram first turn valid at row
+# slow + signal - 1 = 34 (0-indexed row 33). Declared here, once, so Phase 3's
+# backtest warm-up buffering has a single source of truth instead of a number
+# invented independently downstream.
+REQUIRED_WARMUP_BARS = 34
+
 
 def _threshold_vote(bullish: pd.Series, bearish: pd.Series, ready: pd.Series) -> pd.Series:
     """+1/-1/0 vote from boolean masks, NaN where the underlying indicator isn't warmed up.
