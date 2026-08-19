@@ -33,6 +33,6 @@ configurable via `SIGNALFORGE_DB_PATH` in `.env`).
 
 ## Status
 
-Phase 0 (setup) and Phase 1 (CoinGecko + OANDA data adapters) are in place.
+Phase 0 (setup) and Phase 1 (Kraken + OANDA data adapters) are in place.
 See the project plan for the full phased roadmap (indicators/signals,
 backtesting, ML, fundamentals, paper trading, live execution).
