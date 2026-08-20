@@ -21,6 +21,7 @@ class Settings:
     oanda_api_token: str | None
     oanda_account_id: str | None
     oanda_environment: str
+    twelve_data_api_key: str | None
     db_path: Path
     log_level: str
 
@@ -37,6 +38,7 @@ def load_settings() -> Settings:
         oanda_api_token=os.environ.get("OANDA_API_TOKEN") or None,
         oanda_account_id=os.environ.get("OANDA_ACCOUNT_ID") or None,
         oanda_environment=os.environ.get("OANDA_ENVIRONMENT", "practice"),
+        twelve_data_api_key=os.environ.get("TWELVE_DATA_API_KEY") or None,
         db_path=db_path,
         log_level=os.environ.get("LOG_LEVEL", "INFO"),
     )

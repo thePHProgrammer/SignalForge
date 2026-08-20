@@ -1,0 +1,15 @@
+{
+    "meta": {
+        "symbol": "EUR/USD",
+        "interval": "1h",
+        "currency_base": "Euro",
+        "currency_quote": "US Dollar",
+        "type": "Physical Currency"
+    },
+    "values": [
+        {"datetime": "2023-11-15 04:00:00", "open": "1.08421", "high": "1.08512", "low": "1.08390", "close": "1.08477"},
+        {"datetime": "2023-11-15 05:00:00", "open": "1.08477", "high": "1.08550", "low": "1.08430", "close": "1.08501"},
+        {"datetime": "2023-11-15 06:00:00", "open": "1.08501", "high": "1.08530", "low": "1.08490", "close": "1.08515"}
+    ],
+    "status": "ok"
+}
