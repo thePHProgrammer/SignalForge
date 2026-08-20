@@ -13,7 +13,7 @@ guaranteed profitable — paper trade extensively before risking real capital.
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
-cp .env.example .env   # fill in OANDA_API_TOKEN from your OANDA practice account
+cp .env.example .env   # fill in TWELVE_DATA_API_KEY (free signup at twelvedata.com)
 python -m pytest
 ```
 
@@ -27,6 +27,14 @@ scripts.fetch_candles`, `python -m pytest`) — this puts the repo root on
 python -m scripts.fetch_candles --asset-class crypto --symbol BTC/USD --timeframe 4h --start 2026-08-01 --end 2026-08-19
 python -m scripts.fetch_candles --asset-class forex  --symbol EUR/USD --timeframe 1h --start 2026-08-15 --end 2026-08-19
 ```
+
+Crypto always uses Kraken's public API (no key/account needed). Forex
+defaults to **Twelve Data** (free API-key signup, no account-approval or
+country restriction). **OANDA** is also supported — pass `--forex-provider
+oanda` — but requires an OANDA account, which isn't available in every
+country; kept mainly for possible future live-execution use, since that
+needs OANDA's account-scoped endpoints regardless of where historical data
+comes from.
 
 Candles are written to the SQLite database at `data/signalforge.db` (path
 configurable via `SIGNALFORGE_DB_PATH` in `.env`).

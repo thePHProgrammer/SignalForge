@@ -1,13 +1,18 @@
 """Manual CLI: fetch candles for one symbol and store them in SQLite.
 
 Doubles as the day-to-day dev tool and the live smoke test against real
-Kraken (no auth needed) and the user's real OANDA practice account (requires
-OANDA_API_TOKEN in .env). This is the only Phase 1 code path that ever makes
-a real network call.
+Kraken (no auth needed) and Twelve Data (requires TWELVE_DATA_API_KEY in
+.env). This is the only Phase 1 code path that ever makes a real network
+call.
+
+Forex defaults to Twelve Data. Pass --forex-provider oanda to use the OANDA
+adapter instead (requires OANDA_API_TOKEN in .env; not available in every
+country -- see .env.example).
 
 Usage:
     python -m scripts.fetch_candles --asset-class crypto --symbol BTC/USD --timeframe 4h --start 2026-08-01 --end 2026-08-19
     python -m scripts.fetch_candles --asset-class forex  --symbol EUR/USD --timeframe 1h --start 2026-08-15 --end 2026-08-19
+    python -m scripts.fetch_candles --asset-class forex  --symbol EUR/USD --timeframe 1h --start 2026-08-15 --end 2026-08-19 --forex-provider oanda
 """
 
 from __future__ import annotations
@@ -18,6 +23,7 @@ from datetime import datetime, timezone
 from signalforge.config import load_settings
 from signalforge.data.adapters.kraken import KrakenAdapter
 from signalforge.data.adapters.oanda import OANDAAdapter
+from signalforge.data.adapters.twelvedata import TwelveDataAdapter
 from signalforge.data.storage.db import get_connection, init_db, upsert_candles
 from signalforge.logging_config import setup_logging
 
@@ -33,6 +39,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeframe", required=True, help="e.g. 30m, 1h, 4h, 1d")
     parser.add_argument("--start", required=True, type=_parse_date, help="YYYY-MM-DD (UTC)")
     parser.add_argument("--end", required=True, type=_parse_date, help="YYYY-MM-DD (UTC)")
+    parser.add_argument("--forex-provider", choices=["twelvedata", "oanda"], default="twelvedata",
+                         help="Data source for --asset-class forex (default: twelvedata)")
     return parser
 
 
@@ -43,8 +51,10 @@ def main() -> None:
 
     if args.asset_class == "crypto":
         adapter = KrakenAdapter()
-    else:
+    elif args.forex_provider == "oanda":
         adapter = OANDAAdapter(api_token=settings.oanda_api_token, environment=settings.oanda_environment)
+    else:
+        adapter = TwelveDataAdapter(api_key=settings.twelve_data_api_key)
 
     candles = adapter.fetch_ohlcv(args.symbol, args.timeframe, args.start, args.end)
 
