@@ -158,10 +158,36 @@ most-recent date range and don't touch it until every other decision is
 locked in from earlier, disjoint ranges, then run it there once as a genuine
 final check. Not enforced in code — discipline only.
 
+## Dashboard
+
+A Streamlit UI with full CLI parity: every page calls the same library
+functions the CLI scripts above call directly (adapters, `generate_signals`,
+`run_walk_forward`, `run_ml_vs_rule_comparison`) — it's a UI on the library,
+not a wrapper around the scripts.
+
+```bash
+pip install -r requirements-ui.txt   # separate from requirements.txt -- keeps
+                                      # the core library/CLI/tests dependency-light
+streamlit run dashboard/Home.py
+```
+
+Four pages, in the sidebar:
+
+- **Fetch Candles** — pull real OHLCV data from Kraken/Twelve Data/OANDA into the local database (the only page that makes a network call).
+- **Signals** — the rule-based signal with a candlestick chart, buy/sell markers, and the per-indicator vote table.
+- **Backtest** — walk-forward backtest of the rule-based signal, with per-window results and a stitched equity curve.
+- **ML Comparison** — walk-forward ML-vs-rule-based comparison, with both equity curves overlaid.
+
+Fetching happens right in the dashboard, so `scripts/fetch_candles.py` isn't required first — but candles still need
+to exist in the database (fetched here or via the CLI, same SQLite file either way) before Signals/Backtest/ML
+Comparison have anything to show. Reads/writes go through a fresh connection per action, same
+open-query-close pattern every `scripts/*.py` CLI already uses.
+
 ## Status
 
 Phase 0 (setup), Phase 1 (Kraken + OANDA data adapters), Phase 2
 (indicator/signal layer with optional multi-timeframe confirmation), Phase 3
-(walk-forward backtesting), and Phase 4 (LightGBM ML layer, compared against
-the rule-based baseline) are in place. See the project plan for the full
-phased roadmap (fundamentals, paper trading, live execution).
+(walk-forward backtesting), Phase 4 (LightGBM ML layer, compared against the
+rule-based baseline), and a Streamlit dashboard (full CLI parity) are in
+place. See the project plan for the full phased roadmap (fundamentals,
+paper trading, live execution).
